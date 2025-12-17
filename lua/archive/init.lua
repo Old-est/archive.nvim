@@ -6,12 +6,6 @@ local config = require("archive.config")
 local _ = require("archive.types")
 
 function M.setup(opts)
-  vim.filetype.add({
-    extension = {
-      task = "markdown",
-    },
-  })
-
   config.options = vim.tbl_deep_extend("force", {}, config.defaults, opts or {})
   require("archive.search").setup(config.options.search)
   require("archive.task").setup(config.options)
