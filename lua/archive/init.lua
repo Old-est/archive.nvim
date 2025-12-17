@@ -1,39 +1,25 @@
----@class archive
 local M = {}
 
-local Task = require("archive.task")
+local config = require("archive.config")
 
-M.setup = require("archive.config").setup
+---@diagnostic disable-next-line: unused-local
+local _ = require("archive.types")
 
-vim.filetype.add({
-  extension = {
-    task = "markdown",
-  },
-})
+function M.setup(opts)
+  vim.filetype.add({
+    extension = {
+      task = "markdown",
+    },
+  })
 
-M.find_tasks_buffer = function()
-  local buf = vim.api.nvim_get_current_buf()
-  local path = vim.api.nvim_buf_get_name(buf)
-
-  local task = require("archive.task")
-  task.find_tasks(path)
+  config.options = vim.tbl_deep_extend("force", {}, config.defaults, opts or {})
+  require("archive.search").setup(config.options.search)
+  require("archive.task").setup(config.options)
+  require("archive.highlight").setup(config.options)
+  require("archive.autocmds").setup()
 end
 
-M.create_task = function()
-  local current_line = vim.api.nvim_get_current_line()
-
-  local new_task = Task.new_from_line(current_line)
-  local file_path = require("archive.storage").dump_to_storage(new_task)
-  if file_path then
-    local buf = vim.api.nvim_get_current_buf() -- текущий буфер
-    local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-    local task_string = new_task:format()
-    local prefix = current_line:match("^(.-)TODO:")
-    vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { prefix .. task_string })
-    vim.cmd("split " .. vim.fn.fnameescape(file_path))
-  end
-end
-
-M.go_to_task = Task.go_to_task
+M.search = require("archive.search")
+M.task = require("archive.task")
 
 return M
