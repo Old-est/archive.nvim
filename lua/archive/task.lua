@@ -57,7 +57,7 @@ function M.create_from_line(line)
   --- get_root_dir function
   --- Try to get associated task_file
   local root_dir = require("archive.search").get_root_from_current()
-  local task_path = vim.fs.joinpath(root_dir, M.storage, task_name .. ".task")
+  local task_path = vim.fs.joinpath(root_dir, M.storage, task_name .. ".md")
   if uv.fs_stat(task_path) then
     local tags = Utils.get_tag_names(M.opts.tags)
     local regex = Utils.make_rg_or(tags)
@@ -169,7 +169,7 @@ function M.create_task()
     local form = task:construct_task_content()
 
     local root_dir = require("archive.search").get_root_from_current()
-    local task_path = vim.fs.joinpath(root_dir, M.storage, task.task_name .. ".task")
+    local task_path = vim.fs.joinpath(root_dir, M.storage, task.task_name .. ".md")
     local source_dir = vim.fn.fnamemodify(task_path, ":p:h")
     vim.fn.mkdir(source_dir, "p")
     local file = io.open(task_path, "w")
@@ -191,7 +191,7 @@ function M.go_to_task()
 
   if task then
     local root_dir = require("archive.search").get_root_from_current()
-    local task_path = vim.fs.joinpath(root_dir, M.storage, task.task_name .. ".task")
+    local task_path = vim.fs.joinpath(root_dir, M.storage, task.task_name .. ".md")
 
     if uv.fs_stat(task_path) then
       vim.cmd("edit " .. vim.fn.fnameescape(task_path))
