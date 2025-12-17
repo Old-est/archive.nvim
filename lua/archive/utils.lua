@@ -1,28 +1,17 @@
----@class archive.Utils
+---@class archive.utils
 local M = {}
 
----@param path string Path to possible task file
----@return boolean Check result
-function M.is_task_file(path)
-  return vim.fn.fnamemodify(path, ":e") == "task"
-end
-
----@param pattern string
----@param path string
-function M.find_pattern(pattern, path, cb)
-  local search = require("archive.config").options.search
-  local command = { search.command }
-  vim.list_extend(command, search.args)
-  table.insert(command, pattern)
-  table.insert(command, path)
-
-  vim.system(command, { text = true }, function(res)
+--- Run a system command asynchronously and return output lines via callback
+---@param cmd string[] Command to run
+---@param cb fun(items: string[]) Callback receiving array of lines
+---@return vim.SystemObj run handle returned by vim.system
+function M.system(cmd, cb)
+  local run = vim.system(cmd, { text = true }, function(res)
     if res.code ~= 0 and res.code ~= 1 then
       return cb({})
     end
 
     local items = {}
-
     for _, line in pairs(vim.split(res.stdout or "", "\n")) do
       if line ~= "" then
         table.insert(items, line)
@@ -30,22 +19,14 @@ function M.find_pattern(pattern, path, cb)
     end
     cb(items)
   end)
+  return run
 end
 
-function M.warn(msg)
-  vim.notify(msg, vim.log.levels.WARN, { title = "Archive" })
-end
-
-function M.error(msg)
-  vim.notify(msg, vim.log.levels.ERROR, { title = "Archive" })
-end
-
-function M.find_root(root_markers, start_path)
-  local found = vim.fs.find(root_markers, {
-    path = start_path,
-    upward = true,
-    stop = vim.loop.os_homedir(),
-  })[1]
+---@param root_markers string[]
+---@param start_path string
+---@return string|nil
+function M.get_root(root_markers, start_path)
+  local found = vim.fs.find(root_markers, { path = start_path, upward = true, stop = vim.loop.os_homedir() })[1]
 
   if not found then
     return nil
@@ -54,10 +35,12 @@ function M.find_root(root_markers, start_path)
   return vim.fs.dirname(found)
 end
 
+---@param root_markers string[]
+---@return string
 function M.get_root_from_current(root_markers)
   local buf = vim.api.nvim_get_current_buf()
   local path = vim.api.nvim_buf_get_name(buf)
-  local root_dir = M.find_root(root_markers, path ~= "" and path or vim.loop.cwd())
+  local root_dir = M.get_root(root_markers, path ~= "" and path or vim.loop.cwd())
 
   if not root_dir then
     root_dir = vim.loop.cwd()
@@ -65,30 +48,26 @@ function M.get_root_from_current(root_markers)
   return root_dir
 end
 
-function M.has_dir(root_dir, name)
-  local path = vim.fs.joinpath(root_dir, name)
-  return vim.fn.isdirectory(path)
+function M.make_rg_or(tags)
+  local escaped_tags = {}
+  for _, tag in ipairs(tags) do
+    -- экранируем пробелы и спецсимволы: (), ., +, *, ?, [, ], ^, $, | и пробел
+    local escaped = tag:gsub("([ ()%.%+%-%*%?%[%]%^%$|])", "\\%1")
+    table.insert(escaped_tags, escaped)
+  end
+  -- объединяем через | и добавляем пробелы перед и двоеточие после
+  local pattern = "\\s*(" .. table.concat(escaped_tags, "|") .. "):"
+  return pattern
 end
 
-function M.read_file_lines(path)
-  local lines = {}
-  local f = io.open(path, "r")
-  if not f then
-    return lines
-  end -- если файла нет
-  for line in f:lines() do
-    table.insert(lines, line)
+function M.get_tag_names(tags_table)
+  local names = {}
+  for _, tag in pairs(tags_table) do
+    if tag.name then
+      table.insert(names, tag.name)
+    end
   end
-  f:close()
-  return lines
-end
-
-function M.table_to_string(t)
-  local parts = {}
-  for k, v in pairs(t) do
-    table.insert(parts, k .. "=" .. tostring(v))
-  end
-  return "{" .. table.concat(parts, ", ") .. "}"
+  return names
 end
 
 return M

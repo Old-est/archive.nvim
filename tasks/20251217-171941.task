@@ -1,0 +1,20 @@
+# Try to implement coroutines
+
+## Statistics:
+
+- TYPE: PERF
+- STATUS: OPEN
+- PRIORITY: 20
+- OPEN DATE (UTC): 2025/12/17 17:19:41
+- CLOSE DATE (UTC): 
+
+## Description
+
+Current approach to function calls mostly sync, but with coroutines it can be better.
+
+> [!NOTE]
+> I've seen some approaches:
+> - `libuv` and custom Async classes
+> - Using `plenary.nvim`
+> - Using callnacks
+

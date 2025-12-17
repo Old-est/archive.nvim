@@ -1,28 +1,59 @@
---- @class archive.Config
+---@class archive.config
 local M = {}
 
---- @type archive.Options
-M.options = {}
+---@param task archive.Task
+function M.get_priority(task)
+  local map = {
+    TODO = 30,
+    BUG = 50,
+    FIX = 40,
+    PERF = 20,
+  }
+  if map[task.source] then
+    return map[task.source]
+  else
+    return 10
+  end
+end
 
-M.ns = vim.api.nvim_create_namespace("archive")
+---@param task archive.Task
+function M.get_creation_time(task)
+  return os.date("!%Y/%m/%d %H:%M:%S", task.creation_time)
+end
 
-vim.api.nvim_set_hl(0, "TaskStatus", { fg = "#ffd700", bold = true })
-vim.api.nvim_set_hl(0, "Task", { fg = "#52796f", bold = true })
-vim.api.nvim_set_hl(0, "TaskDesc", { fg = "#9226c7", bold = true })
+---@param task archive.Task
+function M.get_type(task)
+  return task.source
+end
 
---- @class archive.Options
-local defaults = {
-  storage_name = "tasks",
-
-  root_markers = { ".git", ".clangd" },
+---@type archive.Options
+M.defaults = {
+  storage = "tasks",
 
   task = {
+    colors = {
+      status = { fg = "#ffd700", bg = "none", bold = true },
+      task = { fg = "#52796f", bg = "none", bold = true },
+      desc = { fg = "#ffd700", bg = "none", bold = true },
+    },
+
+    tags = {
+      type = { name = "TYPE", default_value = M.get_type },
+      status = { name = "STATUS", values = { "OPEN", "DONE", "INPROGRESS", "PAUSED" }, default_value = "OPEN" },
+      priority = { name = "PRIORITY", default_value = M.get_priority },
+      creation_date = { name = "OPEN DATE (UTC)", default_value = M.get_creation_time },
+      close_date = { name = "CLOSE DATE (UTC)" },
+    },
+
+    tags_order = { "type", "status", "priority", "creation_date", "close_date" },
+
     status = {
       "OPEN",
       "DONE",
       "INPROGRESS",
       "PAUSED",
     },
+
     default_status = "OPEN",
 
     source = {
@@ -35,26 +66,11 @@ local defaults = {
   search = {
     command = "rg",
     args = { "--color=never", "--no-heading", "--with-filename", "--line-number", "--column" },
-    pattern = {
-      TODO = "TODO:",
-      BUG = "BUG:",
-      FIX = "FIX:",
-      TASK = [[TASK\(\d{8}-\d{6}\):]],
-    },
+    root_markers = { ".git", "stylua.toml" },
   },
 }
 
-function M.setup(options)
-  M.options = options
-  M.options = vim.tbl_deep_extend("force", {}, defaults, M.options or {})
-  vim.api.nvim_set_hl_ns(M.ns)
-  require("archive.autocmds").setup_autocmds()
-  require("archive.task").setup(M.options)
-
-  if Snacks and pcall(require, "snacks.picker") then
-    Snacks.picker.sources.task = require("archive.snacks").source
-  end
-  M.loaded = true
-end
+---@type archive.Options
+M.options = vim.deepcopy(M.defaults)
 
 return M
