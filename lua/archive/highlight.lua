@@ -18,17 +18,19 @@ function M.highlight_task(buf)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   for row, line in ipairs(lines) do
     if Task.is_task(line) then
-      local start_task, end_desc, start_desc = Task.get_task_idxs(line)
+      local task_idxs = Task.get_task_idxs(line)
 
-      vim.api.nvim_buf_set_extmark(buf, M.main_ns, row - 1, start_task - 1, {
-        end_col = start_desc - 1,
+      vim.api.nvim_buf_set_extmark(buf, M.main_ns, row - 1, task_idxs[1] - 1, {
+        end_col = task_idxs[2],
         hl_group = "Task",
       })
 
-      vim.api.nvim_buf_set_extmark(buf, M.main_ns, row - 1, start_desc - 1, {
-        end_col = end_desc,
-        hl_group = "TaskDesc",
-      })
+      if task_idxs[3] and task_idxs[4] then
+        vim.api.nvim_buf_set_extmark(buf, M.main_ns, row - 1, task_idxs[3] - 1, {
+          end_col = task_idxs[4],
+          hl_group = "TaskDesc",
+        })
+      end
     end
   end
 end
@@ -47,7 +49,12 @@ function M.statistics_virtual_lines(buf)
 
   local task = Task.create_from_line(line)
   if task then
-    local data_virt = task:generate_virt_lines()
+    local start_idxs = Task.get_task_idxs(line)
+    local real_start = start_idxs[1]
+    if real_start ~= 0 then
+        real_start = real_start - 1
+    end
+    local data_virt = task:generate_virt_lines(real_start)
     vim.api.nvim_buf_set_extmark(buf, M.virtual_lines_ns, current_line, -1, {
       virt_lines = data_virt,
     })
