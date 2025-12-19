@@ -22,6 +22,24 @@ function M.system(cmd, cb)
   return run
 end
 
+--- Set window-local options.
+---@param win number
+---@param wo vim.wo|{}|{winhighlight: string|table<string, string>}
+function M.wo(win, wo)
+  for k, v in pairs(wo or {}) do
+    if k == "winhighlight" and type(v) == "table" then
+      local parts = {} ---@type string[]
+      for kk, vv in pairs(v) do
+        if vv ~= "" then
+          parts[#parts + 1] = ("%s:%s"):format(kk, vv)
+        end
+      end
+      v = table.concat(parts, ",")
+    end
+    vim.api.nvim_set_option_value(k, v, { scope = "local", win = win })
+  end
+end
+
 ---@param root_markers string[]
 ---@param start_path string
 ---@return string|nil

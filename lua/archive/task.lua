@@ -1,12 +1,16 @@
 ---@class archive.task
 local M = {}
 
+local Win = require("archive.win")
+
 --- TASK(20251217-171941): Try to implement coroutines
 
 --- TASK(20251217-175204): Add good hover display support
+--- TASK(20251218-061110): Make highlight in tasks itself for references
 
 local uv = vim.uv or vim.loop
 local Utils = require("archive.utils")
+local Win = require("archive.win")
 
 ---@class archive.Task
 local Task = {}
@@ -30,12 +34,12 @@ function M.setup(opts)
 end
 
 function M.is_task(line)
-  local task_name, desc = line:match("TASK%((%d+%-%d+)%)%s*:%s*(.*)")
+  local task_start, task_end = line:find("TASK%(%d+%-%d+%)%s-:?")
 
-  if not task_name and not desc then
-    return false
+  if task_start and task_end then
+    return true
   end
-  return true
+  return false
 end
 
 function M.is_task_cursor()
@@ -46,7 +50,7 @@ end
 ---@param line string
 ---@return archive.Task | nil
 function M.create_from_line(line)
-  local task_name, desc = line:match("TASK%((%d+%-%d+)%)%s*:%s*(.*)")
+  local task_name, desc = line:match("TASK%((%d+%-%d+)%)%s-:?%s*(.*)")
 
   if not task_name then
     return
@@ -86,7 +90,9 @@ function M.create_from_line_cursor()
 end
 
 function M.get_task_idxs(line)
-  return line:find("TASK%(%d+%-%d+%)%s*:%s*().+$")
+  local task_start, task_end = line:find("TASK%(%d+%-%d+%)%s-:?")
+  local _, desc_end, desc_start = line:find("TASK%(%d+%-%d+%)%s*:%s*().+$")
+  return { task_start, task_end, desc_start, desc_end }
 end
 
 function M.get_task_idxs_cursor()
@@ -199,7 +205,7 @@ function M.go_to_task()
   end
 end
 
-function Task:generate_virt_lines()
+function Task:generate_virt_lines(start_idx)
   local lines = {}
 
   -- Соберём все строки контента заранее, чтобы посчитать максимальную ширину
@@ -250,17 +256,19 @@ function Task:generate_virt_lines()
   local min_width = 30
   max_width = math.max(max_width, min_width)
 
+  local indent = string.rep(" ", start_idx)
+
   -- Теперь строим финальные строки с правильным отступом
   local border = "─"
-  local header = "┌─ Task Statistics " .. string.rep(border, max_width - 16) .. "┐"
-  local footer = "└" .. string.rep(border, max_width + 2) .. "┘" -- +2 за "│ " и " │"
+  local header = indent .. "┌─ Task Statistics " .. string.rep(border, max_width - 16) .. "┐"
+  local footer = indent .. "└" .. string.rep(border, max_width + 2) .. "┘" -- +2 за "│ " и " │"
 
   table.insert(lines, { { header, "TaskStatus" } })
 
   for _, item in ipairs(content_lines) do
     -- Вычисляем отступы справа, чтобы всё выровнялось по правому краю
     local padded = item.text .. string.rep(" ", max_width - #item.text)
-    local full_line = "│ " .. padded .. " │"
+    local full_line = indent .. "│ " .. padded .. " │"
 
     -- Подсветка (можно кастомизировать по ключу или значению)
     local hl = "TaskStatus"
@@ -270,6 +278,55 @@ function Task:generate_virt_lines()
   table.insert(lines, { { footer, "TaskStatus" } })
 
   return lines
+end
+
+function M.hover()
+  local current_win = vim.api.nvim_get_current_win()
+  local current_line = vim.api.nvim_get_current_line()
+  local task = M.create_from_line(current_line)
+
+  print(vim.inspect(task))
+
+  if task then
+    local root_dir = require("archive.search").get_root_from_current()
+    local task_file = vim.fs.joinpath(root_dir, M.storage, task.task_name .. ".md")
+    local data = vim.fn.readfile(task_file)
+
+    local buf = Win.create_buffer(data, { modifiable = false, bufhidden = "wipe", filetype = "markdown" })
+
+    local win_opts = Win.get_place(data)
+
+    local hover_win = Win.spawn_float_window(buf, win_opts)
+
+    local group = vim.api.nvim_create_augroup("ArchiveHoverClose", { clear = true })
+
+    vim.api.nvim_create_autocmd({
+      "CursorMoved",
+      "CursorMovedI",
+      "BufLeave",
+      "WinLeave",
+    }, {
+      group = group,
+      callback = function()
+        -- hover уже закрыт
+        if not vim.api.nvim_win_is_valid(hover_win) then
+          vim.api.nvim_del_augroup_by_id(group)
+          return
+        end
+
+        -- реагируем ТОЛЬКО на движение в исходном окне
+        if vim.api.nvim_get_current_win() ~= current_win then
+          return
+        end
+
+        local line = vim.api.nvim_win_get_cursor(current_win)[1]
+        if line ~= current_line then
+          vim.api.nvim_win_close(hover_win, true)
+          vim.api.nvim_del_augroup_by_id(group)
+        end
+      end,
+    })
+  end
 end
 
 return M

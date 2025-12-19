@@ -47,15 +47,6 @@ M.defaults = {
 
     tags_order = { "type", "status", "priority", "creation_date", "close_date" },
 
-    status = {
-      "OPEN",
-      "DONE",
-      "INPROGRESS",
-      "PAUSED",
-    },
-
-    default_status = "OPEN",
-
     source = {
       TODO = { priority = 30 },
       BUG = { priority = 50 },

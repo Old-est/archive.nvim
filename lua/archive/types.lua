@@ -57,3 +57,15 @@
 ---@field desc string Task description
 ---@field creation_time integer
 ---@field stats table<string, archive.StatValue>
+
+---@class archive.Win.Config: vim.api.keyset.win_config
+---@field show? boolean
+---@field position? "float"|"bottom"|"top"|"left"|"right"|"current"
+---@field enter? boolean
+---@field buf? number If set, use this buffer instead of creating a new one
+---@field file? string
+
+---@class archive.Win
+---@field buf number
+---@field win number
+---@field opts archive.Win.Config

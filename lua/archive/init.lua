@@ -1,3 +1,5 @@
+--- TASK(20251218-071242): Add README.md
+
 local M = {}
 
 local config = require("archive.config")
@@ -15,5 +17,6 @@ end
 
 M.search = require("archive.search")
 M.task = require("archive.task")
+M.win = require("archive.win")
 
 return M
