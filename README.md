@@ -22,6 +22,7 @@ Main purpose of this plugin is local storage for tasks inside project. You can t
 - create task from [folke's todo](https://github.com/folke/todo-comments.nvim)
 - virtual lines for task statistics
 - hover on task to see it
+- tasks picker with [Snacks](https://github.com/folke/snacks.nvim)
 
 ## Requirements
 
@@ -57,6 +58,7 @@ Main purpose of this plugin is local storage for tasks inside project. You can t
   storage = "tasks",
 
   task = {
+    icon = " ",
     colors = {
       status = { fg = "#ffd700", bg = "none", bold = true },
       task = { fg = "#52796f", bg = "none", bold = true },
@@ -87,3 +89,5 @@ Main purpose of this plugin is local storage for tasks inside project. You can t
   },
 }
 ```
+
+### Keybinds

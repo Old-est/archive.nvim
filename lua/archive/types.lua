@@ -27,6 +27,7 @@
 
 --- TaskConfig holds all options needed for describing task
 ---@class archive.TaskConfig
+---@field icon string
 ---@field colors archive.TaskStyles
 ---@field tags table<string, archive.TaskTag>
 ---@field tags_order string[]

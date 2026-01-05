@@ -13,6 +13,13 @@ function M.setup(opts)
   require("archive.task").setup(config.options)
   require("archive.highlight").setup(config.options)
   require("archive.autocmds").setup()
+
+  if Snacks and pcall(require, "snacks.picker") then
+    Snacks.picker.sources.task = require("archive.snacks.task").source
+    Snacks.picker.task_storage = function(picker_opts)
+      return require("archive.snacks.task_storage").task_storage(picker_opts)
+    end
+  end
 end
 
 M.search = require("archive.search")
