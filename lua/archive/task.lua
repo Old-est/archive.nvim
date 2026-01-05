@@ -191,7 +191,7 @@ function M.create_task()
   end
 end
 
-function M.go_to_task()
+function M.go_to()
   local line = vim.api.nvim_get_current_line()
   local task = M.create_from_line(line)
 
@@ -285,7 +285,6 @@ function M.hover()
   local current_line = vim.api.nvim_get_current_line()
   local task = M.create_from_line(current_line)
 
-  print(vim.inspect(task))
 
   if task then
     local root_dir = require("archive.search").get_root_from_current()
@@ -327,6 +326,30 @@ function M.hover()
       end,
     })
   end
+end
+
+function M.go_to_decl()
+  local filetype = vim.bo.filetype
+  if filetype ~= "markdown" then
+    return
+  end
+
+  local filepath = vim.api.nvim_buf_get_name(0) -- 0 = текущий буфер
+  local filename = vim.fn.fnamemodify(filepath, ":t")
+
+  local task_name = filename:match("%d+-%d+")
+
+  if task_name == nil then
+    return
+  end
+
+  local root_dir = require("archive.search").get_root_from_current()
+
+  local pattern = "TASK\\(\\s*" .. task_name .. "\\s*\\)\\s*:"
+
+  local search_res = require("archive.search").search_pattern_sync(pattern, root_dir)
+
+  Win.open_file(search_res[1].filename, search_res[1].lnum, search_res[1].col - 1)
 end
 
 return M

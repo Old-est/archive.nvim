@@ -31,6 +31,7 @@ M.defaults = {
   storage = "tasks",
 
   task = {
+    icon = " ",
     colors = {
       status = { fg = "#ffd700", bg = "none", bold = true },
       task = { fg = "#52796f", bg = "none", bold = true },

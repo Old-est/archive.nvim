@@ -64,4 +64,22 @@ function Win.get_place(data)
   return win_opts
 end
 
+function Win.open_file(path, line, col)
+  local bufnr = vim.fn.bufnr(path)
+
+  if bufnr == -1 then
+    vim.cmd("edit " .. vim.fn.fnameescape(path))
+    bufnr = vim.api.nvim_get_current_buf()
+  else
+    -- Переключаемся на существующий буфер
+    vim.api.nvim_set_current_buf(bufnr)
+  end
+
+  if not vim.api.nvim_buf_is_loaded(bufnr) then
+    vim.fn.bufload(bufnr)
+  end
+
+  vim.api.nvim_win_set_cursor(0, { line, col })
+end
+
 return Win
